@@ -3,7 +3,7 @@ import mediapipe as mp
 import pandas as pd
 import os
 
-csv_file = "hand_landmarks.csv"
+csv_file = "hand_landmarks_ke_te.csv"
 
 # MediaPipe Handsのセットアップ
 mp_hands = mp.solutions.hands
@@ -59,8 +59,8 @@ def collect_landmarks( label):
     print( f'Collected { len( landmarks_data)} data points for {label}')
 
 # データ収集のための指示    
-#word = ["a","i","u","e","o","ka","ki","ku","ke","ko","sa","si","su","se","so","ta","ti","tu","te","to","na","ni","nu","ne","no","ha","hi","hu","he","ho","ma","mi","mu","me","mo","ya","yu","yo","ra","ri","ru","re","ro","wa","wo","n"]
-word = ["a","i","u","e","o"]
+#word = ['a', 'i', 'u', 'e', 'o', 'ka', 'ki', 'ku', 'ke', 'ko', 'sa', 'shi', 'su', 'se', 'so', 'ta', 'chi', 'tsu', 'te', 'to', 'na', 'ni', 'nu', 'ne', 'ha', 'hi', 'hu', 'he', 'ho', 'ma', 'mi', 'mu', 'me', 'ya', 'yu', 'yo', 'ra', 'ru', 're', 'ro', 'wa']
+word = ["a","i","u","e","o","ka","ki","ku","ke","ko","sa","shi","su","se","so","ta","chi","tsu","te","to"]
 
 for i in word:
     input(f"Press Enter to collect data for {i}...")
