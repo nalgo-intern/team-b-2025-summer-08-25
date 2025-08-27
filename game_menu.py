@@ -1,9 +1,9 @@
-
 import tkinter as tk
 from tkinter import ttk
 import cv2
 from PIL import Image, ImageTk
 import time
+import random # randomモジュールをインポート
 
 # discrimination.pyからジェスチャー認識クラスをインポート
 from discrimination import GestureRecognizer
@@ -23,12 +23,36 @@ class GameApplication:
         self.video_container_width = 1
         self.video_container_height = 1
 
-        # --- スタイルの設定 (ゲージの太さを定義) ---
+        # --- スタイルの設定 (ゲージの太さと背景色) ---
         style = ttk.Style(self.root)
         style.configure('Thick.Vertical.TProgressbar', thickness=30)
+        style.configure('TFrame', background='#f0f0f0')
+        style.configure('TLabel', background='#f0f0f0')
 
         # --- タイマー変数の初期化 ---
         self.start_time = time.time()
+        self.numerical_timer_value = 60 # 60秒からスタート
+        self.gauge_timer_percent = 100 # 100%からスタート
+        self.gauge_cycle_duration = 5 # ゲージ1サイクルの時間 (秒)
+        self.last_gauge_change_time = time.time() # ゲージでお題が変更された最終時刻
+
+        # --- ポーズリストの読み込みと初期お題の設定 ---
+        self.pose_list = []
+        try:
+            with open("array.txt", "r") as f:
+                self.pose_list = [line.strip() for line in f if line.strip()]
+        except FileNotFoundError:
+            print("Warning: array.txt not found. Using default poses.")
+            self.pose_list = ["thumbs up", "piece"]
+        
+        if not self.pose_list:
+            print("Warning: array.txt is empty. Using default poses.")
+            self.pose_list = ["thumbs up", "piece"]
+
+        self.current_prompt_text = random.choice(self.pose_list)
+        self.match_threshold = 0.8 # 信頼度閾値
+        self.last_matched_prompt_time = 0 # 最後にマッチした時刻
+        self.match_cooldown = 2 # マッチ後のクールダウン秒数
 
         # --- ジェスチャー認識クラスの初期化 ---
         self.recognizer = GestureRecognizer(model_path='model.h5')
@@ -47,35 +71,55 @@ class GameApplication:
         self.update_game()
 
     def _create_widgets(self):
-        """UIウィジェットを作成し、画面に配置する"""
-        # --- 上部フレーム (タイマーと結果) ---
-        top_frame = ttk.Frame(self.root, padding=(10, 5))
-        top_frame.pack(fill=tk.X)
-        self.numerical_timer_label = tk.Label(
-            top_frame, text="01:00", font=("Courier", 24, "bold"),
-            bg="white", fg="black", borderwidth=2, relief="sunken", padx=10
-        )
-        self.numerical_timer_label.pack(side=tk.LEFT, padx=10)
-        self.result_label = ttk.Label(top_frame, text="Detected: unknown (0.0%)", font=("Helvetica", 16))
-        self.result_label.pack(side=tk.LEFT, padx=20, expand=True)
+        """UIウィジェットを作成し、画面に配置する (gridシステムを使用)"""
+        # ★★★★★ 全体を覆う「土台」のフレームを作成 ★★★★★
+        main_container = ttk.Frame(self.root, style='TFrame')
+        main_container.pack(fill=tk.BOTH, expand=True)
 
-        # --- 下部のメインフレーム ---
-        main_frame = ttk.Frame(self.root, padding=(10, 5, 10, 10))
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        # --- 土台フレームのグリッド設定 ---
+        # 0列目(ゲージ)は固定幅、1列目(お題/映像/結果)がウィンドウ幅に応じて伸縮する
+        main_container.columnconfigure(0, weight=0)
+        main_container.columnconfigure(1, weight=1)
+        # 0行目(タイマー)、1行目(お題)、2行目(映像)がウィンドウ高さに応じて伸縮する
+        main_container.rowconfigure(0, weight=0)
+        main_container.rowconfigure(1, weight=0)
+        main_container.rowconfigure(2, weight=1)
+
+        # --- 上部タイマー (映像フレームと同じ列に配置) ---
+        self.numerical_timer_label = tk.Label(
+            main_container, text="01:00", font=("Courier", 24, "bold"),
+            bg="#f0f0f0", fg="black", borderwidth=2, relief="sunken", padx=10
+        )
+        self.numerical_timer_label.grid(row=0, column=1, pady=5, sticky="n") # row=0に変更
+
+        # --- お題表示ラベル (上部中央) ---
+        self.prompt_display_label = ttk.Label(
+            main_container, 
+            text=f"Make a {self.current_prompt_text} sign", 
+            font=("Helvetica", 28, "bold"), 
+            foreground="white", # お題の色
+            style='TLabel'
+        )
+        self.prompt_display_label.grid(row=1, column=1, pady=10, sticky="n") # row=1に変更
 
         # --- 左フレーム (ゲージタイマー) ---
-        left_frame = ttk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
+        left_frame = ttk.Frame(main_container, width=50, style='TFrame')
+        left_frame.grid(row=2, column=0, sticky="ns", padx=10, pady=10)
+        left_frame.grid_propagate(False)
+        left_frame.rowconfigure(0, weight=1)
+        left_frame.columnconfigure(0, weight=1)
+
         self.gauge_timer = ttk.Progressbar(
-            left_frame, orient='vertical', length=480, mode='determinate', style='Thick.Vertical.TProgressbar'
+            left_frame, orient='vertical', mode='determinate'
         )
-        self.gauge_timer.pack(fill=tk.Y, expand=True)
+        self.gauge_timer.grid(row=0, column=0, sticky="nswe")
+        self.gauge_timer['value'] = 100 # 初期値
 
         # --- 中央フレーム (映像) ---
-        self.center_frame = ttk.Frame(main_frame, relief="sunken", borderwidth=2)
-        self.center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.center_frame = ttk.Frame(main_container, style='TFrame')
+        self.center_frame.grid(row=2, column=1, sticky="nsew", padx=10, pady=10)
         self.video_label = ttk.Label(self.center_frame)
-        self.video_label.pack(anchor=tk.CENTER, expand=True)
+        self.video_label.pack(side=tk.BOTTOM)
 
         # ★★★★★ 映像フレームのサイズ変更イベントをバインド ★★★★★
         self.center_frame.bind("<Configure>", self.on_resize)
@@ -96,22 +140,44 @@ class GameApplication:
 
     def update_gauge_timer(self):
         """ゲージタイマーを更新する機能"""
-        self.gauge_timer_percent = 100 - ((time.time() - self.start_time) % 5) * 20
+        # 例として、5秒で1サイクルするゲージを実装
+        current_time = time.time()
+        self.gauge_timer_percent = 100 - ((current_time - self.last_gauge_change_time) % self.gauge_cycle_duration) * (100 / self.gauge_cycle_duration)
         self.gauge_timer['value'] = self.gauge_timer_percent
+
+        # ゲージが1サイクル完了したらお題を変更
+        if (current_time - self.last_gauge_change_time) >= self.gauge_cycle_duration:
+            self._change_prompt_randomly()
+            self.last_gauge_change_time = current_time # ゲージのサイクル開始時刻をリセット
+
+    def _change_prompt_randomly(self):
+        """お題をランダムに選択し、表示を更新するヘルパー関数"""
+        # 現在のお題を除外したリストを作成
+        available_prompts = [p for p in self.pose_list if p != self.current_prompt_text]
+
+        # もし異なるお題が選択肢にない場合、何もしない
+        if not available_prompts:
+            return
+
+        new_prompt = random.choice(available_prompts)
+        self.current_prompt_text = new_prompt
+        self.prompt_display_label.config(text=f"Make a {self.current_prompt_text} sign")
 
     def update_game(self):
         """ゲームの状態を更新し、UIに反映する (メインループ)"""
         ret, frame = self.cap.read()
         if ret:
-            # ★★★★★ 16:9のアスペクト比を維持してリサイズ ★★★★★
-            # コンテナの幅と高さから、16:9に収まる最大のサイズを計算
-            container_w = self.video_container_width
-            container_h = self.video_container_height
-            target_w = container_w
+            # ★★★★★ 16:9のアスペクト比を維持してリサイズ (7割のサイズで) ★★★★★
+            # コンテナの幅と高さの80%をターゲットサイズとする
+            container_w = self.video_container_width * 0.8
+            container_h = self.video_container_height * 0.8
+
+            # 70%のエリアに収まる最大の16:9サイズを計算
+            target_w = int(container_w)
             target_h = int(container_w / 16 * 9)
 
             if target_h > container_h:
-                target_h = container_h
+                target_h = int(container_h)
                 target_w = int(container_h / 9 * 16)
             
             # target_w, target_hが0以下にならないように保護
@@ -125,9 +191,15 @@ class GameApplication:
             self.photo = self._cv2_to_imagetk(processed_frame)
             self.video_label.config(image=self.photo)
 
-            # 認識結果をラベルに表示
-            result_text = f"Detected: {label} ({confidence * 100:.1f}%)"
-            self.result_label.config(text=result_text)
+            # ★★★★★ お題マッチングロジック ★★★★★
+            current_time = time.time()
+            if label == self.current_prompt_text and \
+               confidence > self.match_threshold and \
+               (current_time - self.last_matched_prompt_time) > self.match_cooldown:
+                
+                self._change_prompt_randomly() # ヘルパー関数を呼び出す
+                self.last_matched_prompt_time = current_time
+                self.last_gauge_change_time = current_time # マッチ時もゲージのサイクルをリセット
 
         # --- タイマー機能の呼び出し ---
         self.update_numerical_timer()
