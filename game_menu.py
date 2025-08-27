@@ -6,7 +6,10 @@ import time
 import random # randomモジュールをインポート
 
 # discrimination.pyからジェスチャー認識クラスをインポート
-from discrimination import GestureRecognizer
+from discrimination_app import GestureRecognizer
+
+# ★★★★★ array.txtのファイルパスを定義 ★★★★★
+POSE_LIST_FILE = "array.txt"
 
 class GameApplication:
     """
@@ -36,17 +39,20 @@ class GameApplication:
         self.gauge_cycle_duration = 5 # ゲージ1サイクルの時間 (秒)
         self.last_gauge_change_time = time.time() # ゲージでお題が変更された最終時刻
 
+        # --- スコアの初期化 ---
+        self.score = 0
+
         # --- ポーズリストの読み込みと初期お題の設定 ---
         self.pose_list = []
         try:
-            with open("array.txt", "r") as f:
+            with open(POSE_LIST_FILE, "r") as f:
                 self.pose_list = [line.strip() for line in f if line.strip()]
         except FileNotFoundError:
-            print("Warning: array.txt not found. Using default poses.")
+            print(f"Warning: {POSE_LIST_FILE} not found. Using default poses.")
             self.pose_list = ["thumbs up", "piece"]
         
         if not self.pose_list:
-            print("Warning: array.txt is empty. Using default poses.")
+            print(f"Warning: {POSE_LIST_FILE} is empty. Using default poses.")
             self.pose_list = ["thumbs up", "piece"]
 
         self.current_prompt_text = random.choice(self.pose_list)
@@ -80,17 +86,26 @@ class GameApplication:
         # 0列目(ゲージ)は固定幅、1列目(お題/映像/結果)がウィンドウ幅に応じて伸縮する
         main_container.columnconfigure(0, weight=0)
         main_container.columnconfigure(1, weight=1)
-        # 0行目(タイマー)、1行目(お題)、2行目(映像)がウィンドウ高さに応じて伸縮する
-        main_container.rowconfigure(0, weight=0)
-        main_container.rowconfigure(1, weight=0)
-        main_container.rowconfigure(2, weight=1)
+        # 0行目(スコア)、1行目(タイマー)、2行目(お題)、3行目(映像)がウィンドウ高さに応じて伸縮する
+        main_container.rowconfigure(0, weight=0) # スコア用
+        main_container.rowconfigure(1, weight=0) # タイマー用
+        main_container.rowconfigure(2, weight=0) # お題用
+        main_container.rowconfigure(3, weight=1) # 映像用
+
+        # --- スコア表示ラベル (左上) ---
+        self.score_label = ttk.Label(
+            main_container, text=f"Score: {self.score}", 
+            font=("Helvetica", 18, "bold"), 
+            style='TLabel'
+        )
+        self.score_label.grid(row=0, column=1, pady=5, sticky="nw") # row=0, column=1, sticky=nw
 
         # --- 上部タイマー (映像フレームと同じ列に配置) ---
         self.numerical_timer_label = tk.Label(
             main_container, text="01:00", font=("Courier", 24, "bold"),
             bg="#f0f0f0", fg="black", borderwidth=2, relief="sunken", padx=10
         )
-        self.numerical_timer_label.grid(row=0, column=1, pady=5, sticky="n") # row=0に変更
+        self.numerical_timer_label.grid(row=1, column=1, pady=5, sticky="n") # row=1に変更
 
         # --- お題表示ラベル (上部中央) ---
         self.prompt_display_label = ttk.Label(
@@ -100,11 +115,11 @@ class GameApplication:
             foreground="white", # お題の色
             style='TLabel'
         )
-        self.prompt_display_label.grid(row=1, column=1, pady=10, sticky="n") # row=1に変更
+        self.prompt_display_label.grid(row=2, column=1, pady=10, sticky="n") # row=2に変更
 
         # --- 左フレーム (ゲージタイマー) ---
         left_frame = ttk.Frame(main_container, width=50, style='TFrame')
-        left_frame.grid(row=2, column=0, sticky="ns", padx=10, pady=10)
+        left_frame.grid(row=3, column=0, sticky="ns", padx=10, pady=10) # row=3に変更
         left_frame.grid_propagate(False)
         left_frame.rowconfigure(0, weight=1)
         left_frame.columnconfigure(0, weight=1)
@@ -117,7 +132,7 @@ class GameApplication:
 
         # --- 中央フレーム (映像) ---
         self.center_frame = ttk.Frame(main_container, style='TFrame')
-        self.center_frame.grid(row=2, column=1, sticky="nsew", padx=10, pady=10)
+        self.center_frame.grid(row=3, column=1, sticky="nsew", padx=10, pady=10) # row=3に変更
         self.video_label = ttk.Label(self.center_frame)
         self.video_label.pack(side=tk.BOTTOM)
 
@@ -133,7 +148,14 @@ class GameApplication:
         """数値タイマーを更新する機能"""
         elapsed_time = int(time.time() - self.start_time)
         remaining_seconds = 60 - elapsed_time
-        if remaining_seconds < 0: remaining_seconds = 0
+        if remaining_seconds < 0:
+            remaining_seconds = 0
+        
+        # タイマーが0になったらアプリケーションを終了
+        if remaining_seconds == 0:
+            self.on_closing()
+            return # 終了処理が呼ばれたらそれ以上更新しない
+
         minutes, seconds = divmod(remaining_seconds, 60)
         time_string = f"{minutes:02d}:{seconds:02d}"
         self.numerical_timer_label.config(text=time_string)
@@ -197,6 +219,9 @@ class GameApplication:
                confidence > self.match_threshold and \
                (current_time - self.last_matched_prompt_time) > self.match_cooldown:
                 
+                self.score += 1 # スコア加算
+                self.score_label.config(text=f"Score: {self.score}") # スコア表示更新
+
                 self._change_prompt_randomly() # ヘルパー関数を呼び出す
                 self.last_matched_prompt_time = current_time
                 self.last_gauge_change_time = current_time # マッチ時もゲージのサイクルをリセット
