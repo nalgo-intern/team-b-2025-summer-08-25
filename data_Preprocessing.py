@@ -34,8 +34,10 @@ model.add(Dense( 64, input_shape=(X_train.shape[1],), activation='relu'))
 
 # 中間層
 model.add(Dense( 64, activation='relu'))
-model.add(Dropout( 0.5))  # 過学習防止のためのDropout層
+model.add(Dropout( 0.3))  # 過学習防止のためのDropout層
 
+model.add(Dense( 128, activation='relu'))
+model.add(Dropout( 0.3)) 
 # 出力層 
 model.add(Dense( 50, activation='softmax'))#ここを変える
 
