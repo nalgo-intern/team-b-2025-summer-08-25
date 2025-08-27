@@ -11,23 +11,25 @@ from discrimination_app import GestureRecognizer
 # ★★★★★ array.txtのファイルパスを定義 ★★★★★
 POSE_LIST_FILE = "array.txt"
 
-class GameApplication:
+class GamePlayScreen(tk.Frame):
     """
     Tkinterをベースにしたゲームアプリケーションのメインクラス。
     """
-    def __init__(self, root):
+    def __init__(self, parent, controller):
         """アプリケーションの初期化"""
-        self.root = root
-        self.root.title("Janken Game")
-        self.root.configure(bg='#f0f0f0')
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        tk.Frame.__init__(self, parent) # tk.Frameを継承
+        self.controller = controller
+        # self.root = root # 削除
+        # self.root.title("Janken Game") # 削除
+        # self.root.configure(bg='#f0f0f0') # 削除
+        # self.root.protocol("WM_DELETE_WINDOW", self.on_closing) # 削除
 
         # --- アスペクト比維持のための変数 ---
         self.video_container_width = 1
         self.video_container_height = 1
 
         # --- スタイルの設定 (ゲージの太さと背景色) ---
-        style = ttk.Style(self.root)
+        style = ttk.Style(self) # self.rootからselfに変更
         style.configure('Thick.Vertical.TProgressbar', thickness=30)
         style.configure('TFrame', background='#f0f0f0')
         style.configure('TLabel', background='#f0f0f0')
@@ -63,23 +65,50 @@ class GameApplication:
         # --- ジェスチャー認識クラスの初期化 ---
         self.recognizer = GestureRecognizer(model_path='model.h5')
 
-        # --- カメラの初期化 ---
-        self.cap = cv2.VideoCapture(0)
-        if not self.cap.isOpened():
-            print("Error: Could not open camera.")
-            self.root.destroy()
-            return
+        # --- カメラの初期化はstart_game_loopで行う ---
+        self.cap = None # 初期化は後で行う
+        self.running = False # ゲームループの実行フラグ
 
         # --- UIウィジェットの作成と配置 ---
         self._create_widgets()
 
-        # --- メインループの開始 ---
+        # --- メインループの開始はstart_game_loopで行う ---
+
+    def start_game_loop(self):
+        """ゲームループを開始し、カメラを初期化する"""
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            print("Error: Could not open camera.")
+            # self.controller.destroy() # アプリケーション全体を終了させる
+            # カメラが開けない場合はゲームオーバー画面に遷移させるなど、適切なエラーハンドリングが必要
+            self.controller.show_game_over_screen(self.score) # 仮でゲームオーバー画面へ
+            return
+        
+        # タイマーとスコアをリセット
+        self.start_time = time.time()
+        self.score = 0
+        self.score_label.config(text=f"Score: {self.score}")
+        self.numerical_timer_label.config(text="01:00")
+        self.last_gauge_change_time = time.time()
+
+        # お題をリセット
+        self.current_prompt_text = random.choice(self.pose_list)
+        self.prompt_display_label.config(text=f"Make a {self.current_prompt_text} sign")
+
+        self.running = True
         self.update_game()
+
+    def stop_game_loop(self):
+        """ゲームループを停止し、リソースを解放する"""
+        self.running = False
+        if self.cap and self.cap.isOpened():
+            self.cap.release()
+        # self.recognizer.release() # recognizerは再利用可能なのでリリースしない
 
     def _create_widgets(self):
         """UIウィジェットを作成し、画面に配置する (gridシステムを使用)"""
         # ★★★★★ 全体を覆う「土台」のフレームを作成 ★★★★★
-        main_container = ttk.Frame(self.root, style='TFrame')
+        main_container = ttk.Frame(self, style='TFrame') # self.rootからselfに変更
         main_container.pack(fill=tk.BOTH, expand=True)
 
         # --- 土台フレームのグリッド設定 ---
@@ -187,6 +216,10 @@ class GameApplication:
 
     def update_game(self):
         """ゲームの状態を更新し、UIに反映する (メインループ)"""
+        # ★★★★★ ゲームループが停止中の場合は何もしない ★★★★★
+        if not self.running:
+            return
+
         ret, frame = self.cap.read()
         if ret:
             # ★★★★★ 16:9のアスペクト比を維持してリサイズ (7割のサイズで) ★★★★★
@@ -230,7 +263,7 @@ class GameApplication:
         self.update_numerical_timer()
         self.update_gauge_timer()
 
-        self.root.after(15, self.update_game)
+        self.after(15, self.update_game) # self.root.afterからself.afterに変更
 
     def _cv2_to_imagetk(self, frame):
         """OpenCVの画像をTkinterのPhotoImageに変換する"""
@@ -240,12 +273,11 @@ class GameApplication:
 
     def on_closing(self):
         """アプリケーション終了時の処理"""
-        print("Releasing resources...")
-        if self.cap.isOpened(): self.cap.release()
-        if self.recognizer: self.recognizer.release()
-        self.root.destroy()
+        # print("Releasing resources...") # 削除
+        self.stop_game_loop()
+        self.controller.show_game_over_screen(self.score)
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    app = GameApplication(root)
-    root.mainloop()
+# if __name__ == '__main__': # 削除
+#     root = tk.Tk()
+#     app = GameApplication(root)
+#     root.mainloop() # 削除
