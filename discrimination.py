@@ -3,98 +3,90 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 
-class GestureRecognizer:
-    """
-    手のジェスチャーを認識するためのクラス。
-    モデルの読み込み、MediaPipeの初期化、フレームごとの認識処理をカプセル化する。
-    """
-    def __init__(self, model_path='model.h5'):
-        """
-        クラスの初期化。モデルとMediaPipeをセットアップする。
-        Args:
-            model_path (str): 使用する学習済みモデルのパス。
-        """
-        # MediaPipe Handsのセットアップ
-        self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(
-            static_image_mode=False,
-            max_num_hands=1,
-            min_detection_confidence=0.5
-        )
-        self.mp_drawing = mp.solutions.drawing_utils
+# Mediapipe Handsのセットアップ
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands( static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5)
+mp_drawing = mp.solutions.drawing_utils
 
-        # モデルの読み込み
-        try:
-            self.model = load_model(model_path)
-        except Exception as e:
-            print(f"Error loading model: {e}")
-            print(f"Please ensure the model file exists at: {model_path}")
-            self.model = None
+# モデルの読み込み
+model = load_model( 'model.h5')
 
-    def _extract_landmark_data(self, hand_landmarks):
-        """手のランドマークを1次元のリストに変換する"""
-        landmarks = []
-        for lm in hand_landmarks.landmark:
-            landmarks.extend([lm.x, lm.y, lm.z])
-        return landmarks
+# 手のランドマークを抽出する関数
+def extract_landmark_data( hand_landmarks):
+    landmarks = []
+    for lm in hand_landmarks.landmark:
+        landmarks.extend( [ lm.x, lm.y, lm.z])
+    return landmarks
 
-    def _predict_hand_shape(self, landmarks):
-        """ランドマークデータから手の形を予測する"""
-        if self.model is None:
-            return "Model not loaded", 0.0
+# 手の形を判別する関数
+def predict_hand_shape( landmarks):
+    # ランドマークデータを正しい形に変換
+    landmarks = np.array( landmarks).reshape( 1, -1)
+    
+    # モデルで予測
+    prediction = model.predict( landmarks)
+    predicted_class = np.argmax( prediction)
+    confidence = prediction[ 0][ predicted_class]  # 確率を取得
 
-        # ランドマークデータを正しい形に変換
-        landmarks_array = np.array(landmarks).reshape(1, -1)
-
-        # モデルで予測
-        prediction = self.model.predict(landmarks_array)
-        predicted_class = np.argmax(prediction)
-        confidence = prediction[0][predicted_class]
-
-        # ラベルを返す (仮のラベル、必要に応じて変更)
-        if predicted_class == 0:
-            label = "piece"
-        elif predicted_class == 1:
-            label = "thumbs up"
-        else:
-            label = "unknown"
-
-        return label, confidence
-
-    def recognize(self, frame):
-        """
-        与えられたフレームに対してジェスチャー認識を行う。
-
-        Args:
-            frame: 入力となるOpenCVのフレーム。
-
-        Returns:
-            tuple: (処理後のフレーム, 予測ラベル, 信頼度)
-        """
-        # デフォルトの戻り値
+    # ラベルを返す
+    if predicted_class == 0:
+        label = "a"
+    elif predicted_class == 2:
+        label = "i"
+    elif predicted_class == 4:
+        label = "u"
+    elif predicted_class == 1:
+        label = "e"
+    elif predicted_class == 3:
+        label = "o"
+    else:
         label = "unknown"
-        confidence = 0.0
 
-        # 画像を水平方向に反転し、RGBに変換
-        frame = cv2.flip(frame, 1)
-        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    return label, confidence
 
-        # 手のランドマークの検出
-        results = self.hands.process(image_rgb)
+# カメラのセットアップ
+cap = cv2.VideoCapture( 0)
 
-        # ランドマークが検出された場合、手の形を判別
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                # ランドマークを描画
-                self.mp_drawing.draw_landmarks(
-                    frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-                # 予測を実行
-                landmarks_data = self._extract_landmark_data(hand_landmarks)
-                label, confidence = self._predict_hand_shape(landmarks_data)
+    # 画像を水平方向に反転
+    frame = cv2.flip( frame, 1)
 
-        return frame, label, confidence
+    # 画像をRGBに変換
+    image = cv2.cvtColor( frame, cv2.COLOR_BGR2RGB)
 
-    def release(self):
-        """リソースを解放する"""
-        self.hands.close()
+    # 手のランドマークの検出
+    results = hands.process( image)
+
+    # 画像をBGRに戻す
+    frame = cv2.cvtColor( image, cv2.COLOR_RGB2BGR)
+
+    # ランドマークが検出された場合、手の形を判別
+    if results.multi_hand_landmarks:
+        for hand_landmarks in results.multi_hand_landmarks:
+            landmarks = extract_landmark_data( hand_landmarks)
+        
+            # 判別結果と確率
+            hand_shape, confidence = predict_hand_shape( landmarks)
+        
+            # 結果を表示（% 表示）
+            text = f"Predicted: {hand_shape} ( {confidence*100:.1f}%)"
+            cv2.putText(frame, text, ( 10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, ( 0, 255, 0), 2, cv2.LINE_AA)
+        
+        # ランドマークを描画
+            mp_drawing.draw_landmarks( frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+    
+    # 画像を表示
+    cv2.imshow( 'result', frame)
+
+    # 'q'キーで終了
+    if cv2.waitKey( 1) & 0xFF == ord( 'q'):
+        break
+
+# リソースの解放
+cap.release()
+cv2.destroyAllWindows()

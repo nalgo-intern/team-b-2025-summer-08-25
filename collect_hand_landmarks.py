@@ -11,7 +11,7 @@ hands = mp_hands.Hands( static_image_mode=False, max_num_hands=1, min_detection_
 mp_drawing = mp.solutions.drawing_utils
 
 # カメラのセットアップ
-cap = cv2.VideoCapture( 0)
+cap = cv2.VideoCapture(0)
 
 # 手の座標データを収集
 landmarks_data = []
@@ -56,18 +56,19 @@ def collect_landmarks( label):
         if cv2.waitKey( 1) & 0xFF == ord( 'q'):
             break
 
-    print( f'Collected { len( landmarks_data)} data points for { label}')
+    print( f'Collected { len( landmarks_data)} data points for {label}')
 
-# データ収集のための指示
-input("Press Enter to collect data for thumbs up...")
-collect_landmarks('thumbs up')
+# データ収集のための指示    
+#word = ["a","i","u","e","o","ka","ki","ku","ke","ko","sa","si","su","se","so","ta","ti","tu","te","to","na","ni","nu","ne","no","ha","hi","hu","he","ho","ma","mi","mu","me","mo","ya","yu","yo","ra","ri","ru","re","ro","wa","wo","n"]
+word = ["a","i","u","e","o"]
 
-input("Press Enter to collect data for piece...")
-collect_landmarks('piece')
+for i in word:
+    input(f"Press Enter to collect data for {i}...")
+    collect_landmarks(i)
 
 # データをCSVファイルに保存
 try:
-    columns = [ f'x{i}' for i in range( 21)] + [f'y{i}' for i in range( 21)] + [ f'z{i}' for i in range( 21)] + [ 'label']
+    columns = [f'x{i}' for i in range( 21)] + [f'y{i}' for i in range( 21)] + [f'z{i}' for i in range( 21)] + ['label']
     df = pd.DataFrame( landmarks_data, columns=columns)
     df.to_csv( csv_file, index=False)
     print( f'Data saved successfully to { csv_file}')
