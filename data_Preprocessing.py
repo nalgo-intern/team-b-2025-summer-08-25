@@ -17,9 +17,10 @@ y = df['label'].values
 # ラベルを数値にエンコード
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform( y)
+print(y_encoded[400])
 
 # OHE
-y_categorical = to_categorical( y_encoded, num_classes=50)#ここを変える
+y_categorical = to_categorical( y_encoded, num_classes=5)#ここを変える
 
 # 訓練データとテストデータに分割
 X_train, X_test, y_train, y_test = train_test_split( X, y_categorical, test_size=0.2, random_state=42)
@@ -30,16 +31,17 @@ X_train, X_test, y_train, y_test = train_test_split( X, y_categorical, test_size
 model = Sequential()
 
 # 入力層
-model.add(Dense( 64, input_shape=(X_train.shape[1],), activation='relu'))
+model.add(Dense( 128, input_shape=(X_train.shape[1],), activation='relu'))
 
 # 中間層
 model.add(Dense( 64, activation='relu'))
 model.add(Dropout( 0.3))  # 過学習防止のためのDropout層
 
-model.add(Dense( 128, activation='relu'))
-model.add(Dropout( 0.3)) 
+model.add(Dense( 64, activation='relu'))
+model.add(Dropout( 0.3))
+
 # 出力層 
-model.add(Dense( 50, activation='softmax'))#ここを変える
+model.add(Dense( 5, activation='softmax'))#ここを変える
 
 # モデルのコンパイル
 model.compile( optimizer='adam', loss='categorical_crossentropy', metrics=[ 'accuracy'])

@@ -31,13 +31,13 @@ def predict_hand_shape( landmarks):
     # ラベルを返す
     if predicted_class == 0:
         label = "a"
-    elif predicted_class == 1:
-        label = "i"
     elif predicted_class == 2:
-        label = "u"
-    elif predicted_class == 3:
-        label = "e"
+        label = "i"
     elif predicted_class == 4:
+        label = "u"
+    elif predicted_class == 1:
+        label = "e"
+    elif predicted_class == 3:
         label = "o"
     else:
         label = "unknown"
