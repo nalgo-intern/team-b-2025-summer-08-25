@@ -19,7 +19,7 @@ label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform( y)
 
 # OHE
-y_categorical = to_categorical( y_encoded, num_classes=2)
+y_categorical = to_categorical( y_encoded, num_classes=50)#ここを変える
 
 # 訓練データとテストデータに分割
 X_train, X_test, y_train, y_test = train_test_split( X, y_categorical, test_size=0.2, random_state=42)
@@ -37,7 +37,7 @@ model.add(Dense( 64, activation='relu'))
 model.add(Dropout( 0.5))  # 過学習防止のためのDropout層
 
 # 出力層 
-model.add(Dense( 2, activation='softmax'))
+model.add(Dense( 50, activation='softmax'))#ここを変える
 
 # モデルのコンパイル
 model.compile( optimizer='adam', loss='categorical_crossentropy', metrics=[ 'accuracy'])
@@ -53,4 +53,4 @@ loss, accuracy = model.evaluate( X_test, y_test)
 print( f"Test Accuracy: {accuracy * 100:.2f}%")
 
 #モデルの保存
-model.save( 'model/model.h5')
+model.save( 'model.h5')

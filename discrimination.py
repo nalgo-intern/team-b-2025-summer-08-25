@@ -9,7 +9,7 @@ hands = mp_hands.Hands( static_image_mode=False, max_num_hands=1, min_detection_
 mp_drawing = mp.solutions.drawing_utils
 
 # モデルの読み込み
-model = load_model( 'model/janken_model.h5')
+model = load_model( 'model.h5')
 
 # 手のランドマークを抽出する関数
 def extract_landmark_data( hand_landmarks):
@@ -33,6 +33,8 @@ def predict_hand_shape( landmarks):
         label = "piece"
     elif predicted_class == 1:
         label = "thumbs up"
+    elif predicted_class == 2:
+        label = "a"
     else:
         label = "unknown"
 
