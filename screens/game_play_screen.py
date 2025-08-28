@@ -9,7 +9,7 @@ import random # randomモジュールをインポート
 from discrimination_app import GestureRecognizer
 
 # ★★★★★ array.txtのファイルパスを定義 ★★★★★
-POSE_LIST_FILE = "array.txt"
+POSE_LIST_FILE = "/array.txt"
 
 class GamePlayScreen(tk.Frame):
     """
