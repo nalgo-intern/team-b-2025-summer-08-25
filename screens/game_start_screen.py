@@ -6,7 +6,7 @@ class GameStartScreen(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
 
-        label = ttk.Label(self, text="Janken Game - Main Menu", font=("Helvetica", 24))
+        label = ttk.Label(self, text="Jesture Game - Main Menu", font=("Helvetica", 24))
         label.pack(pady=20, padx=20)
 
         start_button = ttk.Button(self, text="Start Game",

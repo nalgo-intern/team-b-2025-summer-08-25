@@ -127,7 +127,14 @@ class GamePlayScreen(tk.Frame):
             font=("Helvetica", 18, "bold"), 
             style='TLabel'
         )
-        self.score_label.grid(row=0, column=1, pady=5, sticky="nw") # row=0, column=1, sticky=nw
+        self.score_label.grid(row=0, column=1, pady=5, sticky="nw", padx=(20, 0)) # row=0, column=1, sticky=nw
+
+        # --- メインメニューに戻るボタン (右上) ---
+        main_menu_button = ttk.Button(
+            main_container, text="Main Menu",
+            command=lambda: self.controller.show_frame("GameStartScreen")
+        )
+        main_menu_button.grid(row=0, column=1, pady=10, padx=10, sticky="ne")
 
         # --- 上部タイマー (映像フレームと同じ列に配置) ---
         self.numerical_timer_label = tk.Label(
