@@ -16,3 +16,7 @@ class GameStartScreen(tk.Frame):
         quit_button = ttk.Button(self, text="Quit",
                                  command=controller.destroy)
         quit_button.pack(pady=10)
+
+        debug_button = ttk.Button(self, text="Debug Mode",
+                                  command=lambda: controller.show_frame("GamePlayScreen", debug=True))
+        debug_button.pack(pady=10)
