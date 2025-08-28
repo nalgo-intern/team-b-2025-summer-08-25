@@ -1,21 +1,41 @@
 import tkinter as tk
 from tkinter import ttk
 
-# --- switch_frame : 画面を切り替えるための関数
 # 選択した難易度、アシストの有無を保存
 
-class AppState:
-    mode = False
-    selected_index = None
+# class AppState:
+#     mode = False
+#     selected_index = None
 
-class StartScreen(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.master = master
-        master.geometry("1200x600")
-        tk.Label(self.master, text="これはスタート画面(仮)です", font=("Arial", 16)).pack(pady=20)
+class GameStartScreen(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        style = ttk.Style()
+        style.configure(
+            "Title.Button",
+            foreground="black",
+            background="#28a745", # 通常時の背景色
+            font=("Meiryo UI", 12),
+            padding=[10, 5, 10, 5], # [左, 上, 右, 下] の内部余白
+            
+        )
+
+        style.map(
+            "Title.Button",
+            foreground=[
+                ("pressed", "white"), 
+                ("active", "white")
+            ],
+            background=[
+                ("pressed", "#1e7e34"), # クリック（押された）時の背景色
+                ("active", "#218838")   # マウスオーバー時の背景色
+            ]
+        )
+
+        tk.Label(self, text="Sign Language Game", font=("Arial", 16)).pack(pady=20)
         
-
         self.mode_var = tk.BooleanVar(value=False)  # 初期値: False
         self.mode_button = tk.Checkbutton(
             self,
@@ -28,11 +48,11 @@ class StartScreen(tk.Frame):
             height=2,
             command=self.check_assist
         )
-        self.mode_button.place(relx=0.5, rely=0.8, x=-10)
+        self.mode_button.place(relx=0.5, rely=0.7, x=-65)
 
         # スタートボタン
         self.start_button = tk.Button(
-            self.master,
+            self,
             text="スタート画面",
             width=40,
             height=5,
@@ -47,8 +67,8 @@ class StartScreen(tk.Frame):
         self.options = ["Easy", "Medium", "Hard"]
         self.selected_var = tk.IntVar(value=-1)
 
-        self.debug_button = tk.Button(root, text="状態を確認(デバッグ用)", command=self.check_mode)
-        self.introduction = tk.Button(root, text="遊び方説明", command=self.make_info)
+        self.debug_button = tk.Button(self, text="状態を確認(デバッグ用)", command=self.check_mode)
+        self.introduction = tk.Button(self, text="遊び方説明", command=self.make_info)
         self.debug_button.pack(pady=20, side = "left")
         self.introduction.place(relx=0.5, rely=0.8, x=-20)
 
@@ -58,8 +78,8 @@ class StartScreen(tk.Frame):
         self.confirm_button.pack_forget()
 
         # アプリ終了ボタン
-        master.update_idletasks()
-        self.quit_button = tk.Button(self.master, text="アプリを閉じる", command=self.master.destroy)
+        self.update_idletasks()
+        self.quit_button = tk.Button(self, text="アプリを閉じる", command=controller.destroy)
         self.quit_button.place(relx=1.0, rely=0.0, anchor="ne", x=-5, y=5)
     
     def get_mode(self):
@@ -75,7 +95,7 @@ class StartScreen(tk.Frame):
 
     # メインから状態を確認するためのボタン
     def check_mode(self):
-        print("ModeSelect の状態:", app.get_mode())
+        print("ModeSelect の状態:", self.get_mode())
 
     # 説明用のウィンドウを作成
     def make_info(self):
@@ -95,7 +115,7 @@ class StartScreen(tk.Frame):
         # 選択肢のボタンを動的生成
         for i, option in enumerate(self.options):
             btn = tk.Button(
-                self.master,
+                self,
                 text=option,
                 width=20,
                 height=2,
@@ -105,15 +125,8 @@ class StartScreen(tk.Frame):
     
     # 選択した難易度を保存
     def save_selection(self, index):
-        AppState.selected_index = index
-        AppState.mode = self.get_mode()
-        print("DifficultIndex: ", AppState.selected_index)
-        print("Assist: ", AppState.mode)
-
-
-
-root = tk.Tk()
-app = StartScreen(master=root)
-
-app.pack()
-app.mainloop()
+        # AppState.selected_index = index
+        # AppState.mode = self.get_mode()
+        # print("DifficultIndex: ", AppState.selected_index)
+        # print("Assist: ", AppState.mode)
+        self.controller.show_frame("GamePlayScreen")
