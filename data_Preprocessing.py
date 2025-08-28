@@ -8,7 +8,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 
 # データを読み込む
-df = pd.read_csv( "hand_landmarks.csv")
+df = pd.read_csv( "hand_landmarks_merged.csv")
 
 # 特徴量（X）とラベル（y）に分ける
 X = df.drop( 'label', axis=1).values
@@ -20,7 +20,7 @@ y_encoded = label_encoder.fit_transform( y)
 print(y_encoded[400])
 
 # OHE
-y_categorical = to_categorical( y_encoded, num_classes=5)#ここを変える
+y_categorical = to_categorical( y_encoded, num_classes=41)#ここを変える
 
 # 訓練データとテストデータに分割
 X_train, X_test, y_train, y_test = train_test_split( X, y_categorical, test_size=0.2, random_state=42)
@@ -41,7 +41,7 @@ model.add(Dense( 64, activation='relu'))
 model.add(Dropout( 0.3))
 
 # 出力層 
-model.add(Dense( 5, activation='softmax'))#ここを変える
+model.add(Dense( 41, activation='softmax'))#ここを変える
 
 # モデルのコンパイル
 model.compile( optimizer='adam', loss='categorical_crossentropy', metrics=[ 'accuracy'])

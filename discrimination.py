@@ -29,19 +29,10 @@ def predict_hand_shape( landmarks):
     confidence = prediction[ 0][ predicted_class]  # 確率を取得
 
     # ラベルを返す
-    if predicted_class == 0:
-        label = "a"
-    elif predicted_class == 2:
-        label = "i"
-    elif predicted_class == 4:
-        label = "u"
-    elif predicted_class == 1:
-        label = "e"
-    elif predicted_class == 3:
-        label = "o"
-    else:
-        label = "unknown"
-
+    sorted_word = ['a', 'chi', 'e', 'ha', 'he', 'hi', 'ho', 'hu' , 'i', 'ka', 'ke', 'ki', 'ko', 'ku', 'ma', 'me', 'mi', 'mu', 'na', 'ne', 'ni', 'nu', 'o', 'ra', 're', 'ro', 'ru', 'sa', 'se', 'shi', 'so', 'su', 'ta', 'te', 'to', 'tsu', 'u', 'wa', 'ya', 'yo', 'yu']
+    #sorted_word = ['a', 'chi', 'e', 'i', 'ka', 'ke', 'ki', 'ko', 'ku', 'o', 'sa', 'se', 'shi', 'so', 'su', 'ta', 'te', 'to', 'tsu', 'u']
+    label = sorted_word[predicted_class]
+    
     return label, confidence
 
 # カメラのセットアップ
