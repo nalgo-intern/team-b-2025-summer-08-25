@@ -30,6 +30,8 @@ class GestureRecognizer:
             print(f"Error loading model: {e}")
             print(f"Please ensure the model file exists at: {model_path}")
             self.model = None
+        
+        self.sorted_word = ['a', 'chi', 'e', 'ha', 'he', 'hi', 'ho', 'hu' , 'i', 'ka', 'ke', 'ki', 'ko', 'ku', 'ma', 'me', 'mi', 'mu', 'na', 'ne', 'ni', 'nu', 'o', 'ra', 're', 'ro', 'ru', 'sa', 'se', 'shi', 'so', 'su', 'ta', 'te', 'to', 'tsu', 'u', 'wa', 'ya', 'yo', 'yu']
 
     def _extract_landmark_data(self, hand_landmarks):
         """手のランドマークを1次元のリストに変換する"""
@@ -52,27 +54,20 @@ class GestureRecognizer:
         confidence = prediction[0][predicted_class]
 
         # ラベルを返す
-        if predicted_class == 0:
-            label = "a"
-        elif predicted_class == 1:
-            label = "e"
-        elif predicted_class == 2:
-            label = "i"
-        elif predicted_class == 3:
-            label = "o"
-        elif predicted_class == 4:
-            label = "u"
+        if predicted_class < len(self.sorted_word):
+            label = self.sorted_word[predicted_class]
         else:
             label = "unknown"
 
         return label, confidence
 
-    def recognize(self, frame):
+    def recognize(self, frame, debug=False):
         """
         与えられたフレームに対してジェスチャー認識を行う。
 
         Args:
             frame: 入力となるOpenCVのフレーム。
+            debug (bool): デバッグモードが有効かどうか。
 
         Returns:
             tuple: (処理後のフレーム, 予測ラベル, 信頼度)
@@ -91,9 +86,10 @@ class GestureRecognizer:
         # ランドマークが検出された場合、手の形を判別
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-                # ランドマークを描画
-                self.mp_drawing.draw_landmarks(
-                    frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
+                # デバッグモードの場合のみランドマークを描画
+                if debug:
+                    self.mp_drawing.draw_landmarks(
+                        frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
 
                 # 予測を実行
                 landmarks_data = self._extract_landmark_data(hand_landmarks)

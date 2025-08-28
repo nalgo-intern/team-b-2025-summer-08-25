@@ -40,7 +40,7 @@ class GameManager(tk.Tk):
         """Escapeキーでフルスクリーンを解除する"""
         self.attributes('-fullscreen', False)
 
-    def show_frame(self, page_name):
+    def show_frame(self, page_name, debug=False):
         """指定された画面を最前面に表示する"""
         # 現在表示されているフレームがGamePlayScreenであれば停止する
         current_frame_name = None
@@ -58,7 +58,7 @@ class GameManager(tk.Tk):
 
         # 新しいフレームがGamePlayScreenであれば開始する
         if page_name == "GamePlayScreen":
-            self.frames["GamePlayScreen"].start_game_loop()
+            self.frames["GamePlayScreen"].start_game_loop(debug=debug)
 
     def show_game_over_screen(self, final_score):
         """ゲームオーバー画面を表示し、スコアを渡す"""
