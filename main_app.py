@@ -1,3 +1,7 @@
+import os
+# TensorFlowの警告ログを抑制（INFOとWARNINGが表示されなくなる）
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 import tkinter as tk
 from tkinter import ttk
 
@@ -10,7 +14,9 @@ class GameManager(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
 
         self.title("Janken Game App")
-        self.geometry("1000x700") # 初期ウィンドウサイズ
+        # self.geometry("1000x700") # 初期ウィンドウサイズはフルスクリーンで不要
+        self.attributes('-fullscreen', True) # フルスクリーンを有効にする
+        self.bind('<Escape>', self.exit_fullscreen) # Escapeキーでフルスクリーン解除
 
         # コンテナフレームを作成し、ウィンドウ全体を埋めるように配置
         container = tk.Frame(self)
@@ -29,6 +35,10 @@ class GameManager(tk.Tk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame("GameStartScreen")
+
+    def exit_fullscreen(self, event=None):
+        """Escapeキーでフルスクリーンを解除する"""
+        self.attributes('-fullscreen', False)
 
     def show_frame(self, page_name):
         """指定された画面を最前面に表示する"""
