@@ -59,11 +59,14 @@
 
 ## 使用するライブラリ
 
-*   `tkinter`
-*   `OpenCV (cv2)`
-*   `Pillow (PIL)`
-*   `TensorFlow Lite`
-*   `MediaPipe`
+*   `tkinter` (Python 3.11.4 Standard Library)
+*   `opencv-python`: 4.11.0.86
+*   `Pillow`: 11.2.1
+*   `tensorflow`: 2.19.1
+*   `mediapipe`: 0.10.21
+*   `pandas`: 2.3.1
+*   `numpy`: 1.26.4
+*   `scikit-learn`: 1.7.1
 
 ## 役割分担
 

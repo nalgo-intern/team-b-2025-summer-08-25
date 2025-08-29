@@ -34,7 +34,7 @@ class GamePlayScreen(tk.Frame):
 
         # --- タイマー変数の初期化 ---
         self.start_time = time.time()
-        self.numerical_timer_value = 60 # 60秒からスタート
+        self.numerical_timer_value = 10 # 60秒からスタート
         self.gauge_timer_percent = 100 # 100%からスタート
         self.gauge_cycle_duration = 5 # ゲージ1サイクルの時間 (秒)
         self.last_gauge_change_time = time.time() # ゲージでお題が変更された最終時刻
@@ -94,7 +94,9 @@ class GamePlayScreen(tk.Frame):
         else:
             self.numerical_timer_label.grid()
             self.gauge_timer.grid()
-            self.numerical_timer_label.config(text="01:00")
+            minutes, seconds = divmod(self.numerical_timer_value, 60)
+            time_string = f"{minutes:02d}:{seconds:02d}"
+            self.numerical_timer_label.config(text=time_string)
 
         # お題をリセット
         if self.debug:
@@ -163,7 +165,7 @@ class GamePlayScreen(tk.Frame):
 
     def update_numerical_timer(self):
         elapsed_time = int(time.time() - self.start_time)
-        remaining_seconds = 60 - elapsed_time
+        remaining_seconds = self.numerical_timer_value - elapsed_time
         if remaining_seconds < 0:
             remaining_seconds = 0
         
